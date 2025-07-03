@@ -1,0 +1,14 @@
+lightgbm==4.6.0
+matplotlib==3.8.4
+networkx==3.3
+numpy==1.26.2
+optuna==4.0.0
+pandas==2.0.3
+PyWavelets==1.6.0
+scikit_learn==1.4.2
+torch_geometric==2.6.1
+tqdm==4.67.1
+--index-url https://download.pytorch.org/whl/cu126
+torch==2.7.1+cu126
+torchvision==0.22.1+cu126
+torchaudio==2.7.1+cu126
