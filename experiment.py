@@ -3,6 +3,7 @@ import json
 from trainer.LSTMTrainer import LSTMTrainer
 from trainer.Trainer import Trainer
 
+
 if __name__ == '__main__':
 
     cfg_name = "ContrastiveBRAE"

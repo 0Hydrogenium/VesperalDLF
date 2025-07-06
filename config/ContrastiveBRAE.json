@@ -32,6 +32,7 @@
     "model__negative_layer_dim1": 27,
     "model__negative_layer_dim2": 9,
     "model__negative_layer_dim3": 3,
+    "model__negative_p": 0.5,
     "model__threshold_ratio": 0.5,
 
     "model__hidden_dim": {"start": 3, "end": 10, "type": "int"}
