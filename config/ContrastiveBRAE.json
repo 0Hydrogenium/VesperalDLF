@@ -1,0 +1,38 @@
+{
+    "task_type": "classification",
+    "data_path": "./dataset/su_you_nei_meng_gu_windfarm/rval_history_i01_df.csv",
+    "data_type": "time_series",
+    "target_name": "target",
+    "target_method": "all_binarize",
+    "optimize_method": "bayesian_optimize",
+    "trial_num": 5,
+    "optimize_metric": ["accuracy", "recall", "precision", "f1"],
+    "optimize_direction": ["maximize", "maximize", "maximize", "maximize"],
+    "metrics_filter": [0.5, 0, 0, 0],
+    "null_data_method": "fill_null_with_zero",
+    "normalize_data_method": "z_score",
+    "sample_data_method": "",
+    "time_scale_method": "",
+
+    "batch_size": 64,
+    "epochs": 10,
+    "learning_rate": 0.001,
+    "predict_range": 1,
+    "random_seed": 56,
+    "timestep": 40,
+    "train_ratio": 0.8,
+    "weight_decay": 0.001,
+
+    "model_name": "LSTM",
+    "loss_function_name": "CrossEntropyLoss",
+    "optimizer_name": "Adam",
+
+    "model__positive_alpha": 0.5,
+    "model__positive_beta": 0.5,
+    "model__negative_layer_dim1": 27,
+    "model__negative_layer_dim2": 9,
+    "model__negative_layer_dim3": 3,
+    "model__threshold_ratio": 0.5,
+
+    "model__hidden_dim": {"start": 3, "end": 10, "type": "int"}
+}
