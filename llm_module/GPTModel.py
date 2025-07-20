@@ -1,6 +1,9 @@
 import torch.nn as nn
 import torch
 
+from llm_module.LayerNorm import LayerNorm
+from llm_module.TransformerBlock import TransformerBlock
+
 
 GPT_CONFIG_124M = {
     "vocab_size": 50257,  # Vocabulary size
@@ -21,13 +24,14 @@ GPT_CONFIG_124M = {
         4.Shortcut connections
 """
 
-class DummyGPTModel(nn.Module):
+
+class GPTModel(nn.Module):
     def __init__(self, cfg):
         super().__init__()
         self.tok_emb = nn.Embedding(cfg["vocab_size"], cfg["emb_dim"])
         self.pos_emb = nn.Embedding(cfg["context_length"], cfg["emb_dim"])
         self.drop_emb = nn.Dropout(cfg["drop_rate"])
-        self.trf_blocks = nn.Sequential(*[DummyTransformerBlock(cfg) for _ in range(cfg["n_layers"])])
+        self.trf_blocks = nn.Sequential(*[TransformerBlock(cfg) for _ in range(cfg["n_layers"])])
         self.final_norm = LayerNorm(cfg["emb_dim"])
         self.out_head = nn.Linear(cfg["emb_dim"], cfg["vocab_size"], bias=False)
 
@@ -42,24 +46,6 @@ class DummyGPTModel(nn.Module):
         logits = self.out_head(x)
         return logits
 
-class DummyTransformerBlock(nn.Module):
-    def __init__(self, normalized_shape, eps=1e-5):
-        super().__init__()
-
-    def forward(self, x):
-        return x
 
 
-class LayerNorm(nn.Module):
-    def __init__(self, emb_dim):
-        super().__init__()
-        self.eps = 1e-5
-        self.scale = nn.Parameter(torch.ones(emb_dim))
-        self.shift = nn.Parameter(torch.zeros(emb_dim))
-
-    def forward(self, x):
-        mean = x.mean(dim=-1, keepdim=True)
-        var = x.var(dim=-1, keepdim=True, unbiased=False)  # biased var
-        norm_x = (x - mean) / torch.sqrt(var + self.eps)
-        return self.scale * norm_x + self.shift
 
