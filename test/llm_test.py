@@ -10,7 +10,7 @@ if __name__ == '__main__':
     model = AutoModelForCausalLM.from_pretrained(model_save_path).to(device)
 
     t0 = time.time()
-    user_input = "请推荐一下杭州的旅游路线"
+    user_input = "你好"
     messages = [{
         "role": "user",
         "content": user_input

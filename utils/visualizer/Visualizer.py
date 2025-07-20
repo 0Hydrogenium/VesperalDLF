@@ -11,7 +11,7 @@ class Visualizer:
         self.dpi = dpi
         self.color_cfg = PreferenceColor.cfg
 
-    def deviation_scatter_plot(self, data_y, data_y_proba, alpha, s, figsize, save_path):
+    def deviation_scatter_plot(self, data_y, data_y_proba, n_alpha, p_alpha, s, figsize, save_path):
         plt.figure(figsize=figsize)
 
         n_idx = np.where(data_y == 0)[0].tolist()
@@ -23,7 +23,7 @@ class Visualizer:
             np.arange(len(n_data_y_proba)),
             n_data_y_proba,
             color=self.color_cfg["base__color_3"],
-            alpha=alpha,
+            alpha=n_alpha,
             s=s,
             label=f"negative deviation"
         )
@@ -31,7 +31,7 @@ class Visualizer:
             np.arange(len(p_data_y_proba)),
             p_data_y_proba,
             color=self.color_cfg["base__color_1"],
-            alpha=alpha,
+            alpha=p_alpha,
             s=s,
             label=f"positive deviation"
         )

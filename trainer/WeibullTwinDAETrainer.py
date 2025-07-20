@@ -233,8 +233,8 @@ class WeibullTwinDAETrainer(Trainer):
 
             if to_visualize:
                 # 绘制偏差散点图
-                self.visualizer.deviation_scatter_plot(train_deviation_label_array, train_deviation_array, alpha=0.5, s=10, figsize=(8, 6), save_path=f"{self.result_save_path}/train_deviation_scatter_plot_epoch_{epoch}.svg")
-                self.visualizer.deviation_scatter_plot(test_deviation_label_array, test_deviation_array, alpha=0.5, s=10, figsize=(8, 6), save_path=f"{self.result_save_path}/test_deviation_scatter_plot_epoch_{epoch}.svg")
+                self.visualizer.deviation_scatter_plot(train_deviation_label_array, train_deviation_array, n_alpha=0.5, p_alpha=0.2, s=10, figsize=(8, 6), save_path=f"{self.result_save_path}/train_deviation_scatter_plot_epoch_{epoch}.svg")
+                self.visualizer.deviation_scatter_plot(test_deviation_label_array, test_deviation_array, n_alpha=0.5, p_alpha=0.2,  s=10, figsize=(8, 6), save_path=f"{self.result_save_path}/test_deviation_scatter_plot_epoch_{epoch}.svg")
 
             """
                 计算ROC曲线相关参数指标:
