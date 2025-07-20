@@ -28,6 +28,6 @@ class ModelFactory:
     model_mapping = init_model_factory()
 
     @classmethod
-    def get(cls, cfg):
-        model = cls.model_mapping.get(cfg["model_name"], None)
+    def get(cls, cfg, model_name):
+        model = cls.model_mapping.get(model_name, None)
         return model(cfg)

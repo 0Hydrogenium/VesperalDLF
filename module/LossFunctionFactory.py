@@ -28,7 +28,7 @@ class LossFunctionFactory:
     loss_function_mapping = init_loss_function_factory()
 
     @classmethod
-    def get(cls, cfg):
-        loss_function = cls.loss_function_mapping.get(cfg["loss_function_name"], None)
+    def get(cls, cfg, loss_function_name):
+        loss_function = cls.loss_function_mapping.get(loss_function_name, None)
         return loss_function(cfg)
     

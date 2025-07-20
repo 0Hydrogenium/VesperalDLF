@@ -5,40 +5,34 @@ import pandas as pd
 
 class BestMetricsTracker:
     def __init__(self):
-        self.train_loss_list = []
-        self.test_loss_list = []
-        self.train_metrics_list = []
-        self.test_metrics_list = []
+        self.train_metrics_tracker_list = []
+        self.test_metrics_tracker_list = []
         self.cfg_list = []
         self.epoch_list = []
 
-    def add(self, train_loss, test_loss, train_metrics, test_metrics, cfg, epoch):
-        self.train_loss_list.append(train_loss)
-        self.test_loss_list.append(test_loss)
-        self.train_metrics_list.append(train_metrics)
-        self.test_metrics_list.append(test_metrics)
+    def add(self, train_metrics_tracker, test_metrics_tracker, cfg, epoch):
+        self.train_metrics_tracker_list.append(train_metrics_tracker)
+        self.test_metrics_tracker_list.append(test_metrics_tracker)
         self.cfg_list.append(cfg)
         self.epoch_list.append(epoch)
 
     def save_data(self, save_path):
         epoch_df = pd.DataFrame(data=self.epoch_list, columns=["epoch"])
-        train_loss_df = pd.DataFrame(data=self.train_loss_list, columns=["train_loss"])
-        test_loss_df = pd.DataFrame(data=self.test_loss_list, columns=["test_loss"])
-        train_metrics_df = pd.DataFrame(self.train_metrics_list)
+        train_metrics_df = pd.DataFrame([tracker.get_metrics() for tracker in self.train_metrics_tracker_list])
         train_metrics_df.columns = [f"train_{col}" for col in train_metrics_df.columns]
-        test_metrics_df = pd.DataFrame(self.test_metrics_list)
+        test_metrics_df = pd.DataFrame([tracker.get_metrics() for tracker in self.test_metrics_tracker_list])
         test_metrics_df.columns = [f"test_{col}" for col in test_metrics_df.columns]
         cfg_df = pd.DataFrame(self.cfg_list)
 
-        combined_df = pd.concat([epoch_df, train_loss_df, test_loss_df, train_metrics_df, test_metrics_df, cfg_df], axis=1)
+        combined_df = pd.concat([epoch_df, train_metrics_df, test_metrics_df, cfg_df], axis=1)
         combined_df.to_csv(save_path, index=False)
 
-    def get_best(self, metrics_filter: list, optimize_direction: list):
+    def get_best(self, metrics_filter: list, optimize_metric: list, optimize_direction: list):
         # 选取方法为：归一化+阈值筛选+Max-Min均衡
         # None为无阈值要求
 
         cfg_df = pd.DataFrame(self.cfg_list)
-        metrics_df = pd.DataFrame(self.test_metrics_list)
+        metrics_df = pd.DataFrame([tracker.get_metrics() for tracker in self.test_metrics_tracker_list]).loc[:, optimize_metric]
         cfg_array = np.array(cfg_df)
         metrics_array = np.array(metrics_df)
         epoch_array = np.array(self.epoch_list)
@@ -64,7 +58,7 @@ class BestMetricsTracker:
 
         if len(feasible_solutions) == 1:
             # 只有1个可行指标组合无法归一化，直接返回该可行指标组合
-            return self.test_metrics_list[0], self.cfg_list[0], self.epoch_list[0]
+            return [tracker.get_metrics() for tracker in self.test_metrics_tracker_list][0], self.cfg_list[0], self.epoch_list[0]
         elif len(feasible_solutions) == 0:
             # 没有可行指标组合返回空值
             return {}, {}, None

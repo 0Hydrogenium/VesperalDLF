@@ -28,6 +28,6 @@ class OptimizerFactory:
     optimizer_mapping = init_optimizer_factory()
 
     @classmethod
-    def get(cls, cfg, model):
-        optimizer = cls.optimizer_mapping.get(cfg["optimizer_name"], None)
+    def get(cls, cfg, optimizer_name, model):
+        optimizer = cls.optimizer_mapping.get(optimizer_name, None)
         return optimizer(cfg, model)

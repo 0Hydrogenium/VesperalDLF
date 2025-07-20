@@ -6,30 +6,25 @@ class ClassificationMetricsTracker:
     # TODO: 多分类指标计算未实现
     def __init__(self, round_digits=4):
         self.round_digits = round_digits
+        self.metrics = {
+            "accuracy": [],
+            "precision": [],
+            "recall": [],
+            "f1": [],
+        }
+        self.metric = {}
 
-        self.total_accuracy = 0
-        self.total_precision = 0
-        self.total_recall = 0
-        self.total_f1 = 0
+    def add_new_metric_list(self, metric_name, metric_list):
+        self.metrics[metric_name] = metric_list
 
-        self.accuracy_num = 0
-        self.precision_num = 0
-        self.recall_num = 0
-        self.f1_num = 0
+    def add_new_metric(self, metric_name, metric):
+        self.metric[metric_name] = metric
 
     def get_metrics(self) -> dict:
         avg_func = lambda total, num: round(total / num, self.round_digits) if num != 0 else 0.0
-        avg_accuracy = avg_func(self.total_accuracy, self.accuracy_num)
-        avg_precision = avg_func(self.total_precision, self.precision_num)
-        avg_recall = avg_func(self.total_recall, self.recall_num)
-        avg_f1 = avg_func(self.total_f1, self.f1_num)
-
-        return {
-            "accuracy": avg_accuracy,
-            "precision": avg_precision,
-            "recall": avg_recall,
-            "f1": avg_f1,
-        }
+        result = {metric_name: avg_func(sum(self.metrics[metric_name]), len(self.metrics[metric_name])) for metric_name in self.metrics.keys()}
+        result.update(self.metric)
+        return result
 
     def update(self, real_array: np.ndarray, pred_array: np.ndarray):
         self.update_accuracy(real_array=real_array, pred_array=pred_array)
@@ -39,29 +34,25 @@ class ClassificationMetricsTracker:
 
     def update_accuracy(self, real_array: np.ndarray, pred_array: np.ndarray) -> float:
         accuracy = accuracy_score(y_true=real_array, y_pred=pred_array)
-        self.total_accuracy += accuracy
-        self.accuracy_num += 1
+        self.metrics["accuracy"].append(accuracy)
         return accuracy
 
     def update_precision(self, real_array: np.ndarray, pred_array: np.ndarray) -> float:
         precision = precision_score(y_true=real_array, y_pred=pred_array, zero_division=np.nan)
         if not np.isnan(precision):
-            self.total_precision += precision
-            self.precision_num += 1
+            self.metrics["precision"].append(precision)
         return precision
 
     def update_recall(self, real_array: np.ndarray, pred_array: np.ndarray) -> float:
         recall = recall_score(y_true=real_array, y_pred=pred_array, zero_division=np.nan)
         if not np.isnan(recall):
-            self.total_recall += recall
-            self.recall_num += 1
+            self.metrics["recall"].append(recall)
         return recall
 
     def update_f1(self, real_array: np.ndarray, pred_array: np.ndarray) -> float:
         f1 = f1_score(y_true=real_array, y_pred=pred_array, zero_division=np.nan)
         if not np.isnan(f1):
-            self.total_f1 += f1
-            self.f1_num += 1
+            self.metrics["f1"].append(f1)
         return f1
 
 

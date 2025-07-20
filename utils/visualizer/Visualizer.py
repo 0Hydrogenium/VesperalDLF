@@ -11,8 +11,90 @@ class Visualizer:
         self.dpi = dpi
         self.color_cfg = PreferenceColor.cfg
 
-    def loss_plot_train_test_curve_with_std(self, train_loss_mean, train_loss_std, test_loss_mean, test_loss_std, scale: int, alpha: float, figsize, save_path):
-        plt.clf()
+    def deviation_scatter_plot(self, data_y, data_y_proba, alpha, s, figsize, save_path):
+        plt.figure(figsize=figsize)
+
+        n_idx = np.where(data_y == 0)[0].tolist()
+        p_idx = np.where(data_y == 1)[0].tolist()
+        n_data_y_proba = data_y_proba[n_idx]
+        p_data_y_proba = data_y_proba[p_idx]
+
+        plt.scatter(
+            np.arange(len(n_data_y_proba)),
+            n_data_y_proba,
+            color=self.color_cfg["base__color_3"],
+            alpha=alpha,
+            s=s,
+            label=f"negative deviation"
+        )
+        plt.scatter(
+            np.arange(len(p_data_y_proba)),
+            p_data_y_proba,
+            color=self.color_cfg["base__color_1"],
+            alpha=alpha,
+            s=s,
+            label=f"positive deviation"
+        )
+
+        plt.xlabel("Deviation", fontsize=14, labelpad=16)
+        plt.ylabel("Value", fontsize=14, labelpad=16)
+        plt.legend(loc="upper right", fontsize=14)
+        plt.grid(True, alpha=0.3)
+        plt.savefig(save_path)
+        plt.close()
+
+    def pr_curve_on_thresholds(self, recalls, precisions, pr_ap, baseline, figsize, save_path):
+        plt.figure(figsize=figsize)
+
+        plt.plot(
+            recalls,
+            precisions,
+            label=f"PR(AP={pr_ap:.4f})",
+            color=self.color_cfg["base__color_1"]
+        )
+        plt.axhline(
+            y=baseline,
+            linestyle='-',
+            label=f"Random",
+            color=self.color_cfg["base__color_3"]
+        )
+
+        plt.xlabel("Recall", fontsize=14, labelpad=16)
+        plt.ylabel("Precision", fontsize=14, labelpad=16)
+        plt.legend(loc="upper right", fontsize=14)
+        plt.grid(True, alpha=0.3)
+        plt.savefig(save_path)
+        plt.close()
+
+    def roc_curve_on_thresholds(self, fpr, tpr, roc_auc, figsize, save_path):
+        plt.figure(figsize=figsize)
+
+        plt.plot(
+            fpr,
+            tpr,
+            label=f"ROC(AUC={roc_auc:.4f})",
+            color=self.color_cfg["base__color_1"],
+            lw=2,
+        )
+        plt.plot(
+            [0, 1],
+            [0, 1],
+            label="Random",
+            color=self.color_cfg["base__color_3"],
+            lw=2,
+            linestyle='--'
+        )
+
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0., 1.05])
+        plt.xlabel("FPR", fontsize=14, labelpad=16)
+        plt.ylabel("TPR", fontsize=14, labelpad=16)
+        plt.legend(loc="lower right", fontsize=14)
+        plt.grid(True, alpha=0.3)
+        plt.savefig(save_path)
+        plt.close()
+
+    def loss_plot_train_test_curve_with_std(self, train_loss_mean, train_loss_std, test_loss_mean, test_loss_std, scale: float, alpha: float, figsize, save_path):
         plt.figure(figsize=figsize, dpi=self.dpi)
 
         plt.plot(
@@ -47,6 +129,7 @@ class Visualizer:
         plt.ylabel("Loss", fontsize=14, labelpad=16)
         plt.legend(loc="upper right", fontsize=14)
         plt.savefig(save_path)
+        plt.close()
 
     def pareto_projection_scatter_3d_plot(self, metrics: pd.DataFrame, label_list, alpha, s, figsize, save_path):
         # 绘制帕累托前沿二维投影图
@@ -150,10 +233,10 @@ class Visualizer:
 
     def bar_plot_param_importance(self, study, optimize_metric, save_path):
         # 绘制各个超参数对结果影响的重要性柱状图
-        plt.clf()
         optuna.visualization.matplotlib.plot_param_importances(study)
         ax = plt.gca()
         ax.set_title("")
         ax.legend(labels=optimize_metric)
         plt.tight_layout()
         plt.savefig(save_path)
+        plt.close()
