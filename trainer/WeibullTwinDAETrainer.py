@@ -160,8 +160,8 @@ class WeibullTwinDAETrainer(Trainer):
             baseline_growth=self.cfg["baseline_growth"]
         )
         # 创建dataloader
-        train_dataloader = DataLoader(train_dataset, self.cfg["batch_size"], True)
-        test_dataloader = DataLoader(test_dataset, self.cfg["batch_size"], False)
+        train_dataloader = DataLoader(train_dataset, self.cfg["batch_size"], shuffle=True)
+        test_dataloader = DataLoader(test_dataset, self.cfg["batch_size"], shuffle=False)
 
         # 创建模型
         p_model = ModelFactory.get(self.cfg, self.cfg["positive_model_name"]).to(self.device)

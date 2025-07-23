@@ -11,9 +11,13 @@ import numpy as np
 import torch
 import optuna
 from datetime import datetime
+
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 from collections import Counter
 
+from extra.llm.module.dataset.PretrainDataset import PretrainDataset
+from extra.llm.module.model.GPTModel import GPTModel
 from extra.llm.module.tokenizer.BPETokenizer import BPETokenizer
 from module.LossFunctionFactory import LossFunctionFactory
 from module.ModelFactory import ModelFactory
@@ -39,20 +43,20 @@ class PretrainTrainer(Trainer):
         # 导入数据表
         text_data = self.import_text_data(self.cfg["data_path"], tokenizer)
         # 分割训练集和测试集
-        train_data, test_data = self.split_into_train_with_test_data(df, self.cfg["train_ratio"])
+        train_data, test_data = self.split_text_into_train_with_test_data(text_data, self.cfg["train_ratio"], tokenizer)
         # 创建dataset
-        train_dataset = TimeSeriesDataset(train_data, self.cfg["target_name"], self.cfg["timestep"], self.cfg["predict_range"])
-        test_dataset = TimeSeriesDataset(test_data, self.cfg["target_name"], self.cfg["timestep"], self.cfg["predict_range"])
+        train_dataset = PretrainDataset(train_data, tokenizer, max_length=self.cfg["context_length"], stride=self.cfg["context_length"], predict_range=self.cfg["predict_range"])
+        test_dataset = PretrainDataset(test_data, tokenizer, max_length=self.cfg["context_length"], stride=self.cfg["context_length"], predict_range=self.cfg["predict_range"])
         # 创建dataloader
-        train_dataloader = DataLoader(train_dataset, self.cfg["batch_size"], True)
-        test_dataloader = DataLoader(test_dataset, self.cfg["batch_size"], False)
+        train_dataloader = DataLoader(train_dataset, self.cfg["batch_size"], shuffle=True, drop_last=True)
+        test_dataloader = DataLoader(test_dataset, self.cfg["batch_size"], shuffle=False, drop_last=False)
 
         # 创建模型
-        model = ModelFactory.get(self.cfg, self.cfg["model_name"]).to(self.device)
+        model = GPTModel(self.cfg).to(self.device)
         # 创建损失函数
         loss_function = LossFunctionFactory.get(self.cfg, self.cfg["loss_function_name"])
         # 创建优化器
-        optimizer = OptimizerFactory.get(self.cfg, self.cfg["optimizer_name"], model)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=self.cfg["learning_rate"], weight_decay=self.cfg["weight_decay"])
 
         # 迭代训练测试模型
         best_metrics_tracker = BestMetricsTracker()  # 创建epochs内最佳指标追踪器
@@ -63,11 +67,8 @@ class PretrainTrainer(Trainer):
             test_metrics_tracker = self.test_model(model, loss_function, test_dataloader, epoch)
             # 更新epochs内最佳模型+参数+指标
             best_metrics_tracker.add(train_metrics_tracker, test_metrics_tracker, self.cfg, epoch)
-
-            # 早停策略
-            if test_metrics_tracker.get_metrics()["accuracy"] > 0.99:
-                print(f"epoch {epoch} early stopping")
-                break
+            # 保存当前epoch的模型
+            self.save_model(model, self.MODEL_SAVE_PATH.format(f"{self.model_save_path}/model.pth"))
 
         # 获取epochs内最佳模型+参数+指标
         best_metrics, best_cfg, best_epoch = best_metrics_tracker.get_best(self.cfg["metrics_filter"], self.cfg["optimize_metric"], self.cfg["optimize_direction"])
@@ -89,8 +90,26 @@ class PretrainTrainer(Trainer):
 
         return self.best_return(best_metrics)
 
+    def save_model(self, model, save_path):
+        torch.save(model.state_dict(), save_path)
+
+    def split_text_into_train_with_test_data(self, data, train_ratio, tokenizer):
+        train_size = int(train_ratio * len(data))
+        train_data = data[:train_size]
+        test_data = data[train_size:]
+
+        print(f"train_data shape: {len(train_data)}, test_data shape: {len(test_data)}")
+        self.data_info["train_data_shape"], self.data_info["test_data_shape"] = len(train_data), len(test_data)
+
+        train_data_tokens_num = len(tokenizer.encode(train_data))
+        test_data_tokens_num = len(tokenizer.encode(test_data))
+        print(f"train_data_tokens shape: {train_data_tokens_num}, test_data_tokens shape: {test_data_tokens_num}")
+        self.data_info["train_data_tokens_shape"], self.data_info["test_data_tokens_shape"] = train_data_tokens_num, test_data_tokens_num
+
+        return train_data, test_data
+
     def import_text_data(self, data_path, tokenizer):
-        with open(data_path, "r", encoding="utf-8") as f:
+        with open(data_path.replace("@", GeneralTool.root_path), "r", encoding="utf-8") as f:
             text_data = f.read()
         text_characters_num = len(text_data)
         text_tokens_num = len(tokenizer.encode(text_data))

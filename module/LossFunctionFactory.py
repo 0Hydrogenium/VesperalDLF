@@ -1,10 +1,12 @@
 import os
 import importlib
 
+from utils.GeneralTool import GeneralTool
+
 
 def init_loss_function_factory():
     # 动态扫描并加载所有损失函数类
-    folder_path = "./module/loss_function"
+    folder_path = f"{GeneralTool.root_path}/module/loss_function"
     loss_function_mapping = {}
     for file_name in os.listdir(folder_path):
         if file_name.endswith(".py") and not file_name.startswith("__"):

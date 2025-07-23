@@ -103,13 +103,13 @@ class Visualizer:
         test_loss_std = np.array([[np.std(np.array(loss)) for loss in [tracker.metrics["loss"] for tracker in best_metrics_tracker.test_metrics_tracker_list]]]).reshape(-1)
 
         plt.plot(
-            np.arange(len(train_loss_mean)),
+            np.arange(1, len(train_loss_mean) + 1),
             train_loss_mean,
             label="train",
             color=self.color_cfg["base__color_1"]
         )
         plt.fill_between(
-            np.arange(len(train_loss_mean)),
+            np.arange(1, len(train_loss_mean) + 1),
             train_loss_mean - scale * train_loss_std,
             train_loss_mean + scale * train_loss_std,
             color=self.color_cfg["base__color_1"],
@@ -117,13 +117,13 @@ class Visualizer:
         )
 
         plt.plot(
-            np.arange(len(test_loss_mean)),
+            np.arange(1, len(test_loss_mean) + 1),
             test_loss_mean,
             label="test",
             color=self.color_cfg["base__color_3"]
         )
         plt.fill_between(
-            np.arange(len(test_loss_mean)),
+            np.arange(1, len(test_loss_mean) + 1),
             test_loss_mean - scale * test_loss_std,
             test_loss_mean + scale * test_loss_std,
             color=self.color_cfg["base__color_3"],

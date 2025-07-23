@@ -2,10 +2,11 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 import time
 
+from utils.GeneralTool import GeneralTool
 
 if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model_save_path = "../model/llm/DeepSeek-R1-Distill-Qwen-1.5B"
+    model_save_path = f"{GeneralTool.root_path}/model/DeepSeek-R1-Distill-Qwen-1.5B"
     tokenizer = AutoTokenizer.from_pretrained(model_save_path)
     model = AutoModelForCausalLM.from_pretrained(model_save_path).to(device)
 

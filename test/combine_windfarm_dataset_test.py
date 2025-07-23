@@ -3,10 +3,11 @@ from collections import Counter
 
 import pandas as pd
 
+from utils.GeneralTool import GeneralTool
 
 if __name__ == '__main__':
     df_list = []
-    base_path = "../data/su_you_nei_meng_gu_windfarm/time_series"
+    base_path = f"{GeneralTool.root_path}/data/su_you_nei_meng_gu_windfarm/time_series"
     for data_path in os.listdir(base_path):
         current_data_path = f"{base_path}/{data_path}"
         df = pd.read_csv(current_data_path)

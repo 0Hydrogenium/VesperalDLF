@@ -1,10 +1,12 @@
 import os
 import importlib
 
+from utils.GeneralTool import GeneralTool
+
 
 def init_optimizer_factory():
     # 动态扫描并加载所有优化器类
-    folder_path = "./module/optimizer"
+    folder_path = f"{GeneralTool.root_path}/module/optimizer"
     optimizer_mapping = {}
     for file_name in os.listdir(folder_path):
         if file_name.endswith(".py") and not file_name.startswith("__"):

@@ -29,12 +29,14 @@ class Trainer:
 
     WARNING_NOT_FOUND_STR = "[config] '{}' is not found"
     SAVE_PATH = "./result/{}"
+    MODEL_SAVE_PATH = "./model/{}"
 
     def __init__(self, cfg: dict, cfg_name: str, chosen_metric: str = "recall"):
         self.cfg = cfg  # 当前参数配置
         self.dynamic_params_cfg = {}  # 备份动态参数配置
         self.cfg_name = cfg_name
         self.result_save_path = ""
+        self.model_save_path = ""
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"device: {self.device}")
         self.trial_idx = 1
@@ -43,6 +45,10 @@ class Trainer:
         self.data_info = {}
 
     def start(self):
+        # 创建模型存储文件夹
+        os.makedirs(self.MODEL_SAVE_PATH.format(self.cfg_name), exist_ok=True)
+        self.model_save_path = self.MODEL_SAVE_PATH.format(self.cfg_name)
+
         # 创建配置类实验结果文件夹
         os.makedirs(self.SAVE_PATH.format(self.cfg_name), exist_ok=True)
         # 获取当前时间戳
@@ -131,8 +137,8 @@ class Trainer:
         train_dataset = TimeSeriesDataset(train_data, self.cfg["target_name"], self.cfg["timestep"], self.cfg["predict_range"])
         test_dataset = TimeSeriesDataset(test_data, self.cfg["target_name"], self.cfg["timestep"], self.cfg["predict_range"])
         # 创建dataloader
-        train_dataloader = DataLoader(train_dataset, self.cfg["batch_size"], True)
-        test_dataloader = DataLoader(test_dataset, self.cfg["batch_size"], False)
+        train_dataloader = DataLoader(train_dataset, self.cfg["batch_size"], shuffle=True)
+        test_dataloader = DataLoader(test_dataset, self.cfg["batch_size"], shuffle=False)
 
         # 创建模型
         model = ModelFactory.get(self.cfg, self.cfg["model_name"]).to(self.device)
@@ -186,14 +192,10 @@ class Trainer:
             x_train, y_train = x_train.to(self.device), y_train.to(self.device)
             optimizer.zero_grad()
             x_train_pred = model(x_train)
-            loss = loss_function(x_train_pred, y_train)
+            loss = loss_function(x_train_pred.flatten(0, 1), y_train.flatten())
             loss.backward()
             optimizer.step()
 
-            y_train = y_train.detach().cpu().numpy()
-            x_train_pred = x_train_pred.detach().cpu().numpy()
-
-            train_metrics_tracker.update(real_array=y_train, pred_array=x_train_pred)
             loss_list.append(loss.item())
             train_bar.desc = "train epoch[{}/{}] (init:{:4f}) loss:{:.4f}".format(epoch, self.cfg["epochs"], loss_list[0], loss)
 
@@ -211,12 +213,8 @@ class Trainer:
                 x_test, y_test = test_tensors
                 x_test, y_test = x_test.to(self.device), y_test.to(self.device)
                 x_test_pred = model(x_test)
-                loss = loss_function(x_test_pred, y_test)
+                loss = loss_function(x_test_pred.flatten(0, 1), y_test.flatten())
 
-                y_test = y_test.detach().cpu().numpy()
-                x_test_pred = x_test_pred.detach().cpu().numpy()
-
-                test_metrics_tracker.update(real_array=y_test, pred_array=x_test_pred)
                 loss_list.append(loss.item())
                 test_bar.desc = "test epoch[{}/{}] (init:{:4f}) loss:{:.4f}".format(epoch, self.cfg["epochs"], loss_list[0], loss)
 
@@ -258,7 +256,7 @@ class Trainer:
                     self.cfg[param_name] = trial.suggest_float(param_name, param_value["start"], param_value["end"])
 
     def import_data(self, data_path):
-        df = pd.read_csv(data_path)
+        df = pd.read_csv(data_path.replace('@', GeneralTool.root_path))
         print(f"imported data (length: {df.shape[0]}, features: {df.shape[1]})")
         self.data_info["imported_data_length"] = df.shape[0]
         self.data_info["imported_data_features"] = df.shape[1]
@@ -376,16 +374,16 @@ class Trainer:
 
         return train_data, test_data
 
-    def split_into_train_with_test_data(self, df, train_ratio):
+    def split_into_train_with_test_data(self, data, train_ratio):
         # 随机打乱数据
-        df.sample(
+        data.sample(
             frac=1,  # 采样比例为100%
             random_state=GeneralTool.seed
         ).reset_index(drop=True, inplace=True)
 
-        train_size = int(train_ratio * len(df))
-        train_data = df[:train_size]
-        test_data = df[train_size:]
+        train_size = int(train_ratio * len(data))
+        train_data = data[:train_size]
+        test_data = data[train_size:]
 
         print(f"train_data shape: {train_data.shape}, test_data shape: {test_data.shape}")
         self.data_info["train_data_shape"], self.data_info["test_data_shape"] = train_data.shape, test_data.shape

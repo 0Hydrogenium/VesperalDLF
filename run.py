@@ -10,9 +10,7 @@ if __name__ == '__main__':
     GeneralTool.set_global_seed(42)
 
     cfg_name = "WeibullTwinDAE"
-    cfg_path = f"./config/{cfg_name}.json"
-    with open(cfg_path, 'r', encoding='utf-8') as f:
-        cfg = json.load(f)
+    cfg = GeneralTool.load_cfg(cfg_name)
 
     trainer = WeibullTwinDAETrainer(cfg, cfg_name)
     trainer.start()

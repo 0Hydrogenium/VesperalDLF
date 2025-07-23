@@ -1,6 +1,6 @@
 {
     "task_type": "classification",
-    "data_path": "./data/su_you_nei_meng_gu_windfarm/time_series/rval_history_i01_df.csv",
+    "data_path": "@/data/su_you_nei_meng_gu_windfarm/time_series/rval_history_i01_df.csv",
     "data_type": "time_series",
     "target_name": "target",
     "target_method": "specific_target",

@@ -1,0 +1,29 @@
+{
+    "task_type": "pretrain",
+    "data_path": ".@/data/the_verdict/the-verdict.txt",
+    "data_type": "text",
+    "optimize_method": "",
+    "trial_num": 5,
+    "optimize_metric": ["loss"],
+    "optimize_direction": ["minimize"],
+    "metrics_filter": [null],
+
+    "batch_size": 2,
+    "epochs": 10,
+    "learning_rate": 0.0004,
+    "predict_range": 1,
+    "train_ratio": 0.8,
+    "weight_decay": 0.1,
+
+    "model_name": "GPT",
+    "loss_function_name": "CrossEntropyLoss",
+    "optimizer_name": "AdamW",
+
+    "vocab_size": 50257,
+    "context_length": 256,
+    "emb_dim": 768,
+    "n_heads": 12,
+    "n_layers": 12,
+    "drop_rate": 0.1,
+    "qkv_bias": false
+}
