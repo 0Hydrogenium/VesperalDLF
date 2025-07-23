@@ -1,10 +1,10 @@
 {
     "task_type": "classification",
-    "data_path": "./dataset/su_you_nei_meng_gu_windfarm/time_series/rval_history_i01_df.csv",
+    "data_path": "./data/su_you_nei_meng_gu_windfarm/time_series",
     "data_type": "time_series",
     "target_name": "target",
     "target_method": "specific_target",
-    "target_value": 25,
+    "target_value": 233,
     "target_mapping": "dynamic_weibull_mapping",
     "target_mapping_k": 4,
     "optimize_method": "",
@@ -31,6 +31,11 @@
     "loss_function_name": "WeibullTwinDAELoss",
     "optimizer_name": "Adam",
 
+    "cumulative_prob": 0.9999,
+    "degradation_factor": 1,
+    "initial_baseline": 0,
+    "baseline_growth": 0,
+
     "model__gamma": 2,
     "model__positive_alpha": 0.5,
     "model__positive_beta": 0.5,
@@ -43,5 +48,8 @@
     "model__hidden_dim": 64,
     "model__num_layers": 3,
     "model__num_heads": 5,
-    "model__ff_dim": 512
+    "model__ff_dim": 512,
+
+    "model__input_dim": 200,
+    "model__output_dim": 2
 }

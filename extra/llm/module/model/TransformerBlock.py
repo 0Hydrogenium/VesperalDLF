@@ -1,9 +1,8 @@
 import torch.nn as nn
-import torch
 
-from llm_module.MultiHeadAttention import MultiHeadAttention
-from llm_module.FeedForward import FeedForward
-from llm_module.LayerNorm import LayerNorm
+from extra.llm.module.model.MultiHeadAttention import MultiHeadAttention
+from extra.llm.module.model.FeedForward import FeedForward
+from extra.llm.module.model.LayerNorm import LayerNorm
 
 
 class TransformerBlock(nn.Module):

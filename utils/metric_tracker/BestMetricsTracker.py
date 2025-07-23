@@ -78,5 +78,8 @@ class BestMetricsTracker:
         best_cfg = dict(zip(cfg_df.columns.tolist(), cfg_array[feasible_mask][best_index].tolist()))
         best_epoch = epoch_array[feasible_mask][best_index]
 
+        print(f"[best] epoch of metrics: {best_epoch}")
+        print(f"[best] metrics: {best_metrics}\n")
+
         return best_metrics, best_cfg, best_epoch
 

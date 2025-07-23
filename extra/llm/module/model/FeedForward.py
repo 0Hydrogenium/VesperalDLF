@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from llm_module.GELU import GELU
+from extra.llm.module.activate_func.GELU import GELU
 
 
 class FeedForward(nn.Module):

@@ -94,8 +94,13 @@ class Visualizer:
         plt.savefig(save_path)
         plt.close()
 
-    def loss_plot_train_test_curve_with_std(self, train_loss_mean, train_loss_std, test_loss_mean, test_loss_std, scale: float, alpha: float, figsize, save_path):
+    def loss_plot_train_test_curve_with_std(self, best_metrics_tracker, scale: float, alpha: float, figsize, save_path):
         plt.figure(figsize=figsize, dpi=self.dpi)
+
+        train_loss_mean = np.array([sum(loss) / len(loss) for loss in [tracker.metrics["loss"] for tracker in best_metrics_tracker.train_metrics_tracker_list]])
+        train_loss_std = np.array([[np.std(np.array(loss)) for loss in [tracker.metrics["loss"] for tracker in best_metrics_tracker.train_metrics_tracker_list]]]).reshape(-1)
+        test_loss_mean = np.array([sum(loss) / len(loss) for loss in [tracker.metrics["loss"] for tracker in best_metrics_tracker.test_metrics_tracker_list]])
+        test_loss_std = np.array([[np.std(np.array(loss)) for loss in [tracker.metrics["loss"] for tracker in best_metrics_tracker.test_metrics_tracker_list]]]).reshape(-1)
 
         plt.plot(
             np.arange(len(train_loss_mean)),

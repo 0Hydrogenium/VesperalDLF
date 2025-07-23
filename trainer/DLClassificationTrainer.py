@@ -32,6 +32,7 @@ class DLClassificationTrainer(Trainer):
             train_bar.desc = "train epoch[{}/{}] (init:{:4f}) loss:{:.4f}".format(epoch, self.cfg["epochs"], loss_list[0], loss)
 
         train_metrics_tracker.add_new_metric_list("loss", loss_list)
+        print(f"[train] metrics: {train_metrics_tracker.get_metrics()}\n")
         return train_metrics_tracker, model
 
     def test_model(self, model, loss_function, test_loader, epoch):
@@ -54,4 +55,5 @@ class DLClassificationTrainer(Trainer):
                 test_bar.desc = "test epoch[{}/{}] (init:{:4f}) loss:{:.4f}".format(epoch, self.cfg["epochs"], loss_list[0], loss)
 
         test_metrics_tracker.add_new_metric_list("loss", loss_list)
+        print(f"[test] metrics: {test_metrics_tracker.get_metrics()}\n")
         return test_metrics_tracker

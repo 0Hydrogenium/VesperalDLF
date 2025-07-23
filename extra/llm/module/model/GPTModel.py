@@ -1,28 +1,8 @@
 import torch.nn as nn
 import torch
 
-from llm_module.LayerNorm import LayerNorm
-from llm_module.TransformerBlock import TransformerBlock
-
-
-GPT_CONFIG_124M = {
-    "vocab_size": 50257,  # Vocabulary size
-    "context_length": 1024,  # Context length
-    "emb_dim": 768,  # Embedding dim
-    "n_heads": 12,  # Number of attn heads
-    "n_layers": 12,  # Number of layers
-    "drop_rate": 0.1,  # Dropout rate
-    "qkv_bias": False  # QKV bias
-}
-
-
-"""
-    GPT architecture:
-        1.Layer normalization
-        2.GELU activation
-        3.Feed forward network
-        4.Shortcut connections
-"""
+from extra.llm.module.model.LayerNorm import LayerNorm
+from extra.llm.module.model.TransformerBlock import TransformerBlock
 
 
 class GPTModel(nn.Module):

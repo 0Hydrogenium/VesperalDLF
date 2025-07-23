@@ -1,7 +1,7 @@
 {
     "task_type": "classification",
-    "data_path": "./data/su_you_nei_meng_gu_windfarm/time_series/rval_history_i01_df.csv",
-    "data_type": "time_series",
+    "data_path": "./data/the_verdict/the-verdict.txt",
+    "data_type": "text",
     "target_name": "target",
     "target_method": "all_binarize",
     "optimize_method": "",
@@ -26,8 +26,5 @@
     "loss_function_name": "CrossEntropyLoss",
     "optimizer_name": "Adam",
 
-    "model__hidden_dim": 5,
-
-    "model__input_dim": 199,
-    "model__output_dim": 2
+    "model__hidden_dim": 5
 }

@@ -10,8 +10,11 @@ class DataMappingVisualizer(Visualizer):
     def __init__(self, dpi=300):
         super().__init__(dpi)
 
-    def line_chart_mapping_y_distribution_param_trend(self, baselines, etas, target_value, figsize, alpha, s, save_path1, save_path2):
+    def line_chart_mapping_y_distribution_param_trend(self, dataset, target_value, figsize, alpha, s, save_path1, save_path2):
         plt.figure(figsize=figsize, dpi=self.dpi)
+
+        baselines = dataset.weibull_baselines
+        etas = dataset.weibull_etas
 
         plt.plot(
             np.arange(1, len(baselines) + 1),
@@ -49,8 +52,11 @@ class DataMappingVisualizer(Visualizer):
         plt.savefig(save_path2)
         plt.close()
 
-    def line_chart_mapping_y_distribution_discrete_with_continuous(self, data_y, mapped_data_y, target_value, figsize, alpha, s, save_path):
+    def line_chart_mapping_y_distribution_discrete_with_continuous(self, dataset, target_value, figsize, alpha, s, save_path):
         plt.figure(figsize=figsize, dpi=self.dpi)
+
+        data_y = dataset.data_y
+        mapped_data_y = dataset.weibull_data_y
 
         # 原始离散点
         plt.scatter(

@@ -13,21 +13,23 @@ import optuna
 from datetime import datetime
 from tqdm import tqdm
 from collections import Counter
+from torch.utils.data.dataloader import DataLoader
 
 from module.LossFunctionFactory import LossFunctionFactory
 from module.ModelFactory import ModelFactory
 from module.OptimizerFactory import OptimizerFactory
+from module.dataset.TimeSeriesDataset import TimeSeriesDataset
 from utils.GeneralTool import GeneralTool
 from utils.metric_tracker.BestMetricsTracker import BestMetricsTracker
 from utils.metric_tracker.ClassificationMetricsTracker import ClassificationMetricsTracker
 from utils.visualizer.Visualizer import Visualizer
 
-WARNING_NOT_FOUND_STR = "[config] '{}' is not found"
-
-SAVE_PATH = "./result/{}"
-
 
 class Trainer:
+
+    WARNING_NOT_FOUND_STR = "[config] '{}' is not found"
+    SAVE_PATH = "./result/{}"
+
     def __init__(self, cfg: dict, cfg_name: str, chosen_metric: str = "recall"):
         self.cfg = cfg  # 当前参数配置
         self.dynamic_params_cfg = {}  # 备份动态参数配置
@@ -37,22 +39,22 @@ class Trainer:
         print(f"device: {self.device}")
         self.trial_idx = 1
         self.visualizer = Visualizer()
-
         self.chosen_metric = chosen_metric
+        self.data_info = {}
 
     def start(self):
         # 创建配置类实验结果文件夹
-        os.makedirs(SAVE_PATH.format(self.cfg_name), exist_ok=True)
+        os.makedirs(self.SAVE_PATH.format(self.cfg_name), exist_ok=True)
         # 获取当前时间戳
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         # 创建当前优化结果文件夹
-        self.result_save_path = f"{SAVE_PATH.format(self.cfg_name)}/{timestamp}"
+        self.result_save_path = f"{self.SAVE_PATH.format(self.cfg_name)}/{timestamp}"
         os.makedirs(self.result_save_path, exist_ok=True)
 
         if self.cfg["optimize_method"] == "bayesian_optimize":
             # 贝叶斯超参数优化
-            assert "optimize_direction" in self.cfg.keys(), WARNING_NOT_FOUND_STR.format("optimize_direction")
-            assert "trial_num" in self.cfg.keys(), WARNING_NOT_FOUND_STR.format("trial_num")
+            assert "optimize_direction" in self.cfg.keys(), self.WARNING_NOT_FOUND_STR.format("optimize_direction")
+            assert "trial_num" in self.cfg.keys(), self.WARNING_NOT_FOUND_STR.format("trial_num")
 
             # 加载配置文件中的动态参数
             for param_name, param_value in self.cfg.items():
@@ -68,14 +70,14 @@ class Trainer:
             best_trial = study.best_trials[best_trial_idx]
             best_trial_result = {"trial": best_trial_idx + 1}
             best_trial_result.update(dict(zip([f"test_{metric}" for metric in self.cfg["optimize_metric"]], best_trial.values)))
-            best_trial_result.update(best_trial.params)
+            best_trial_result.update(best_trial.gpt_params)
             print(f"[best] trial metrics: {best_trial_result}\n")
             with open(f"{self.result_save_path}/best_result.json", 'w', encoding='utf-8') as f:
                 json.dump(best_trial_result, f, ensure_ascii=False, indent=4)
 
             # 更新当前变量为最优trial变量
             self.trial_idx = "best"
-            for k, v in best_trial.params.items():
+            for k, v in best_trial.gpt_params.items():
                 if k in self.cfg.keys():
                     self.cfg[k] = v
 
@@ -84,7 +86,7 @@ class Trainer:
             trials_index_df = pd.DataFrame(data=[_ for _ in range(1, len(trials) + 1)], columns=["trial"])
             trials_df = pd.DataFrame(data=[trial.values for trial in trials], columns=self.cfg["optimize_metric"])
             trials_df.columns = [f"test_{col}" for col in trials_df.columns]
-            trials_metrics_df = pd.DataFrame([trial.params for trial in trials])
+            trials_metrics_df = pd.DataFrame([trial.gpt_params for trial in trials])
             combined_trials_df = pd.concat([trials_index_df, trials_df, trials_metrics_df], axis=1)
             combined_trials_df.to_csv(f"{self.result_save_path}/best_metrics.csv", index=False)
 
@@ -112,61 +114,25 @@ class Trainer:
 
     def run(self, trial: optuna.trial = None, to_visualize=False):
         # 加载动态参数值
-        if trial is not None:
-            for param_name, param_value in self.dynamic_params_cfg.items():
-                if param_value["type"] == "int":
-                    self.cfg[param_name] = trial.suggest_int(param_name, param_value["start"], param_value["end"])
-                elif param_value["type"] == "float":
-                    self.cfg[param_name] = trial.suggest_float(param_name, param_value["start"], param_value["end"])
-
-        data_info = {}
+        self.load_dynamic_params(trial)
         # 导入数据表
         df = self.import_data(self.cfg["data_path"])
-        print(f"imported data (length: {df.shape[0]}, features: {df.shape[1]})")
-        data_info["imported_data_length"] = df.shape[0]
-        data_info["imported_data_features"] = df.shape[1]
         # 处理缺失值
         df = self.process_null_value(df)
-        print(f"processed null data (length: {df.shape[0]}, features: {df.shape[1]})")
-        data_info["processed_null_data_length"] = df.shape[0]
-        data_info["processed_null_data_features"] = df.shape[1]
         # 处理目标值
         df = self.process_target_value(df)
-        raw_y_distribution = dict(Counter(df[self.cfg["target_name"]]).most_common())
-        print(f"raw y distribution: {raw_y_distribution}")
-        data_info["raw_y_distribution"] = raw_y_distribution
-        print(f"processed target data (length: {df.shape[0]}, features: {df.shape[1]})")
-        data_info["processed_target_data_length"] = df.shape[0]
-        data_info["processed_target_data_features"] = df.shape[1]
+        # 查看目标值分布
+        self.show_y_distribution(df[self.cfg["target_name"]])
         # 数据标准化
         df = self.normalize_value(df)
-        print(f"normalized data (length: {df.shape[0]}, features: {df.shape[1]})")
-        data_info["normalized_data_length"] = df.shape[0]
-        data_info["normalized_data_features"] = df.shape[1]
-
-        # 分割x和y
-        data_x, data_y = self.split_into_x_with_y(df)
-        y_distribution = dict(Counter(data_y.tolist()).most_common())
-        print(f"y distribution: {y_distribution}")
-        data_info["y_distribution"] = y_distribution
         # 分割训练集和测试集
-        train_data_x, train_data_y, test_data_x, test_data_y = self.split_into_train_with_test_data(data_x, data_y)
-        # 转换为时间序列数据
-        x_train, y_train = self.convert_from_data_to_time_series(train_data_x, train_data_y)
-        x_test, y_test = self.convert_from_data_to_time_series(test_data_x, test_data_y)
-        print(f"converted from data to time series (x_train shape: {x_train.shape}, y_train shape: {y_train.shape}, x_test shape: {x_test.shape}, y_test shape: {y_test.shape})")
-        data_info["x_train_shape"], data_info["y_train_shape"], data_info["x_test_shape"], data_info["y_test_shape"] = x_train.shape, y_train.shape, x_test.shape, y_test.shape
-        # ndarray格式转换为tensor格式
-        x_train_tensor = self.convert_from_ndarray_to_tensor(x_train)
-        y_train_tensor = self.convert_from_ndarray_to_tensor(y_train)
-        x_test_tensor = self.convert_from_ndarray_to_tensor(x_test)
-        y_test_tensor = self.convert_from_ndarray_to_tensor(y_test)
-        # 转换为数据加载器
-        train_loader, test_loader = self.get_data_loader(x_train_tensor, y_train_tensor, x_test_tensor, y_test_tensor)
-
-        # 根据数据获取模型的输入维度和输出维度
-        self.cfg["model__input_dim"] = data_x.shape[1]
-        self.cfg["model__output_dim"] = 2
+        train_data, test_data = self.split_into_train_with_test_data(df, self.cfg["train_ratio"])
+        # 创建dataset
+        train_dataset = TimeSeriesDataset(train_data, self.cfg["target_name"], self.cfg["timestep"], self.cfg["predict_range"])
+        test_dataset = TimeSeriesDataset(test_data, self.cfg["target_name"], self.cfg["timestep"], self.cfg["predict_range"])
+        # 创建dataloader
+        train_dataloader = DataLoader(train_dataset, self.cfg["batch_size"], True)
+        test_dataloader = DataLoader(test_dataset, self.cfg["batch_size"], False)
 
         # 创建模型
         model = ModelFactory.get(self.cfg, self.cfg["model_name"]).to(self.device)
@@ -176,15 +142,12 @@ class Trainer:
         optimizer = OptimizerFactory.get(self.cfg, self.cfg["optimizer_name"], model)
 
         # 迭代训练测试模型
-        # 创建epochs内最佳指标追踪器
-        best_metrics_tracker = BestMetricsTracker()
+        best_metrics_tracker = BestMetricsTracker()  # 创建epochs内最佳指标追踪器
         for epoch in range(1, self.cfg["epochs"] + 1):
             # 训练模型
-            train_metrics_tracker, model = self.train_model(model, loss_function, optimizer, train_loader, epoch)
-            print(f"[train] metrics: {train_metrics_tracker.get_metrics()}\n")
+            train_metrics_tracker, model = self.train_model(model, loss_function, optimizer, train_dataloader, epoch)
             # 测试模型
-            test_metrics_tracker = self.test_model(model, loss_function, test_loader, epoch)
-            print(f"[test] metrics: {test_metrics_tracker.get_metrics()}\n")
+            test_metrics_tracker = self.test_model(model, loss_function, test_dataloader, epoch)
             # 更新epochs内最佳模型+参数+指标
             best_metrics_tracker.add(train_metrics_tracker, test_metrics_tracker, self.cfg, epoch)
 
@@ -195,45 +158,23 @@ class Trainer:
 
         # 获取epochs内最佳模型+参数+指标
         best_metrics, best_cfg, best_epoch = best_metrics_tracker.get_best(self.cfg["metrics_filter"], self.cfg["optimize_metric"], self.cfg["optimize_direction"])
-        print(f"[best] epoch of metrics: {best_epoch}")
-        print(f"[best] metrics: {best_metrics}\n")
-        # 保存所有epoch数据
-        best_metrics_tracker.save_data(f"{self.result_save_path}/trial_{self.trial_idx}.csv")
-
         # 保存数据信息
-        with open(f"{self.result_save_path}/data_info_trial_{self.trial_idx}.json", 'w', encoding='utf-8') as f:
-            json.dump(data_info, f, ensure_ascii=False, indent=4)
-
-        if isinstance(self.trial_idx, int):
-            # trial_idx代表超参数优化次数
-            self.trial_idx += 1
-
-        # 无可行指标组合处理
-        if best_epoch is None:
-            return tuple(0 for _ in self.cfg["optimize_metric"])
+        self.save_data_info(best_metrics_tracker)
 
         # 绘制模型训练测试曲线
         if to_visualize:
-            train_loss_list = pd.DataFrame(best_metrics_tracker.train_metrics_list)["loss"].tolist()
-            test_loss_list = pd.DataFrame(best_metrics_tracker.test_metrics_list)["loss"].tolist()
-
-            train_loss_mean = np.array([sum(loss) / len(loss) for loss in train_loss_list])
-            train_loss_std = np.array([[np.std(np.array(loss)) for loss in train_loss_list]]).reshape(-1)
-            test_loss_mean = np.array([sum(loss) / len(loss) for loss in test_loss_list])
-            test_loss_std = np.array([[np.std(np.array(loss)) for loss in test_loss_list]]).reshape(-1)
-
             self.visualizer.loss_plot_train_test_curve_with_std(
-                train_loss_mean,
-                train_loss_std,
-                test_loss_mean,
-                test_loss_std,
+                best_metrics_tracker,
                 scale=0.5,
                 alpha=0.2,
                 figsize=(8, 6),
                 save_path=f"{self.result_save_path}/loss_plot.svg"
             )
 
-        return tuple(best_metrics[metric] for metric in self.cfg["optimize_metric"])
+        # 更新超参数优化次数
+        self.update_trial_idx()
+
+        return self.best_return(best_metrics)
 
     def train_model(self, model, loss_function, optimizer, train_loader, epoch):
         model.train()
@@ -257,6 +198,7 @@ class Trainer:
             train_bar.desc = "train epoch[{}/{}] (init:{:4f}) loss:{:.4f}".format(epoch, self.cfg["epochs"], loss_list[0], loss)
 
         train_metrics_tracker.add_new_metric_list("loss", loss_list)
+        print(f"[train] metrics: {train_metrics_tracker.get_metrics()}\n")
         return train_metrics_tracker, model
 
     def test_model(self, model, loss_function, test_loader, epoch):
@@ -279,10 +221,47 @@ class Trainer:
                 test_bar.desc = "test epoch[{}/{}] (init:{:4f}) loss:{:.4f}".format(epoch, self.cfg["epochs"], loss_list[0], loss)
 
         test_metrics_tracker.add_new_metric_list("loss", loss_list)
+        print(f"[test] metrics: {test_metrics_tracker.get_metrics()}\n")
         return test_metrics_tracker
+
+    def best_return(self, best_metrics={}):
+        if len(best_metrics) == 0:
+            return tuple(0 for _ in self.cfg["optimize_metric"])
+
+        return tuple(best_metrics[metric] for metric in self.cfg["optimize_metric"])
+
+    def update_trial_idx(self):
+        if isinstance(self.trial_idx, int):
+            # trial_idx代表超参数优化次数
+            self.trial_idx += 1
+
+    def save_data_info(self, best_metrics_tracker, mark="trial"):
+        # 保存所有epoch数据
+        best_metrics_tracker.save_data(f"{self.result_save_path}/{mark}_{self.trial_idx}.csv")
+
+        data_info_path = f"{self.result_save_path}/data_info_trial_{self.trial_idx}.json"
+        if not os.path.exists(data_info_path):
+            with open(data_info_path, 'w', encoding='utf-8') as f:
+                json.dump(self.data_info, f, ensure_ascii=False, indent=4)
+
+    def show_y_distribution(self, data, mark: str = ""):
+        raw_y_distribution = dict(Counter(data).most_common())
+        print(f"{mark} y distribution: {raw_y_distribution}")
+        self.data_info[f"{mark}_y_distribution"] = raw_y_distribution
+
+    def load_dynamic_params(self, trial):
+        if trial is not None:
+            for param_name, param_value in self.dynamic_params_cfg.items():
+                if param_value["type"] == "int":
+                    self.cfg[param_name] = trial.suggest_int(param_name, param_value["start"], param_value["end"])
+                elif param_value["type"] == "float":
+                    self.cfg[param_name] = trial.suggest_float(param_name, param_value["start"], param_value["end"])
 
     def import_data(self, data_path):
         df = pd.read_csv(data_path)
+        print(f"imported data (length: {df.shape[0]}, features: {df.shape[1]})")
+        self.data_info["imported_data_length"] = df.shape[0]
+        self.data_info["imported_data_features"] = df.shape[1]
 
         return df
 
@@ -295,6 +274,9 @@ class Trainer:
             for col in df.columns:
                 if df[col].isnull().any():
                     df[col] = df[col].fillna(df[col].mean())
+        print(f"processed null data (length: {df.shape[0]}, features: {df.shape[1]})")
+        self.data_info["processed_null_data_length"] = df.shape[0]
+        self.data_info["processed_null_data_features"] = df.shape[1]
 
         return df
 
@@ -308,7 +290,7 @@ class Trainer:
                 dict(zip([i for i in range(label_num + 1)], [0] + [1] * label_num))
             )
         elif self.cfg["target_method"] == "specific_target":
-            assert "target_value" in self.cfg.keys(), WARNING_NOT_FOUND_STR.format("target_value")
+            assert "target_value" in self.cfg.keys(), self.WARNING_NOT_FOUND_STR.format("target_value")
             df[target_name] = np.where(df[target_name] == self.cfg["target_value"], 1, 0)
         elif self.cfg["target_method"] == "multi_labels":
             pass
@@ -316,6 +298,10 @@ class Trainer:
             pass
         elif self.cfg["target_method"] == "multi_var":
             pass
+
+        print(f"processed target data (length: {df.shape[0]}, features: {df.shape[1]})")
+        self.data_info["processed_target_data_length"] = df.shape[0]
+        self.data_info["processed_target_data_features"] = df.shape[1]
 
         return df
 
@@ -327,6 +313,11 @@ class Trainer:
             elif self.cfg["normalize_data_method"] == "min_max":
                 scaler = MinMaxScaler()
             df = scaler.fit_transform(df)
+
+            print(f"normalized data (length: {df.shape[0]}, features: {df.shape[1]})")
+            self.data_info["normalized_data_length"] = df.shape[0]
+            self.data_info["normalized_data_features"] = df.shape[1]
+
             return df
 
         target_name = self.cfg["target_name"]
@@ -364,79 +355,40 @@ class Trainer:
                     columns=df.columns
                 )
 
+        print(f"normalized data (length: {df.shape[0]}, features: {df.shape[1]})")
+        self.data_info["normalized_data_length"] = df.shape[0]
+        self.data_info["normalized_data_features"] = df.shape[1]
+
         return df
 
-    def split_into_x_with_y(self, df):
-        target_name = self.cfg["target_name"]
-
-        data_x = np.array(df)
-        data_y = np.array(df.loc[:, target_name])
-
-        return data_x, data_y
-
-    def stratified_shuffle_split_into_train_with_test_data(self, data_x, data_y, mapped_data_y):
+    def stratified_shuffle_split_into_train_with_test_data(self, df, train_ratio, target_name):
         # 创建分层抽样分割器
         splitter = StratifiedShuffleSplit(
             n_splits=1,  # 只进行一次分割
-            train_size=self.cfg["train_ratio"],
+            train_size=train_ratio,
             random_state=GeneralTool.seed
         )
 
         # 获取训练和测试索引
-        for train_index, test_index in splitter.split(data_x, data_y):
-            x_train = data_x[train_index]
-            y_train = data_y[train_index]
-            mapped_y_train = mapped_data_y[train_index]
-            x_test = data_x[test_index]
-            y_test = data_y[test_index]
-            mapped_y_test = mapped_data_y[test_index]
+        train_index, test_index = [x for x in splitter.split(df, df[target_name])][0]
+        train_data = df.iloc[train_index, :]
+        test_data = df.iloc[test_index, :]
 
-        return x_train, y_train, mapped_y_train, x_test, y_test, mapped_y_test
+        return train_data, test_data
 
-    def split_into_train_with_test_data(self, data_x, data_y):
-        # 生成随机索引并打乱
-        indices = np.arange(len(data_x))
-        np.random.shuffle(indices)
-        data_x = data_x[indices]
-        data_y = data_y[indices]
+    def split_into_train_with_test_data(self, df, train_ratio):
+        # 随机打乱数据
+        df.sample(
+            frac=1,  # 采样比例为100%
+            random_state=GeneralTool.seed
+        ).reset_index(drop=True, inplace=True)
 
-        train_size = int(self.cfg["train_ratio"] * len(data_x))
-        train_data_x = data_x[: train_size, :, :]
-        train_data_y = data_y[: train_size]
-        test_data_x = data_x[train_size:, :, :]
-        test_data_y = data_y[train_size:]
+        train_size = int(train_ratio * len(df))
+        train_data = df[:train_size]
+        test_data = df[train_size:]
 
-        return train_data_x, train_data_y, test_data_x, test_data_y
+        print(f"train_data shape: {train_data.shape}, test_data shape: {test_data.shape}")
+        self.data_info["train_data_shape"], self.data_info["test_data_shape"] = train_data.shape, test_data.shape
 
-    def convert_from_data_to_time_series(self, data_x, data_y=None):
-        if self.cfg["data_type"] == "time_series":
-            time_y = None
-            # 转换为时间窗口
-            timestep = self.cfg["timestep"]
-            predict_range = self.cfg["predict_range"]
+        return train_data, test_data
 
-            train_time_data_x = []
-            train_time_data_y = []
-            for idx in range(len(data_x) - timestep - predict_range + 1):
-                train_time_data_x.append(data_x[idx: idx + timestep])
-                if data_y is not None:
-                    train_time_data_y.append(data_y[idx + timestep + predict_range - 1])
-            time_x = np.array(train_time_data_x)
-            if data_y is not None:
-                time_y = np.array(train_time_data_y)
-
-            return time_x, time_y
-
-    def convert_from_ndarray_to_tensor(self, ndarray):
-        tensor = torch.from_numpy(ndarray).to(torch.float32)
-
-        return tensor
-
-    def get_data_loader(self, x_train_tensor, y_train_tensor, x_test_tensor, y_test_tensor):
-        train_dataset = torch.utils.data.TensorDataset(x_train_tensor, y_train_tensor)
-        test_dataset = torch.utils.data.TensorDataset(x_test_tensor, y_test_tensor)
-
-        train_loader = torch.utils.data.DataLoader(train_dataset, self.cfg["batch_size"], True)
-        test_loader = torch.utils.data.DataLoader(test_dataset, self.cfg["batch_size"], False)
-
-        return train_loader, test_loader

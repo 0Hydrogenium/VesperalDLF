@@ -22,7 +22,7 @@ class ClassificationMetricsTracker:
 
     def get_metrics(self) -> dict:
         avg_func = lambda total, num: round(total / num, self.round_digits) if num != 0 else 0.0
-        result = {metric_name: avg_func(sum(self.metrics[metric_name]), len(self.metrics[metric_name])) for metric_name in self.metrics.keys()}
+        result = {metric_name: round(float(avg_func(sum(self.metrics[metric_name]), len(self.metrics[metric_name]))), self.round_digits) for metric_name in self.metrics.keys()}
         result.update(self.metric)
         return result
 
