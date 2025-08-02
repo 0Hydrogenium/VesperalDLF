@@ -29,7 +29,7 @@ from utils.metric_tracker.ClassificationMetricsTracker import ClassificationMetr
 from utils.visualizer.Visualizer import Visualizer
 
 
-class PretrainTrainer(Trainer):
+class InstructionTuningTrainer(Trainer):
     def __init__(self, cfg: dict, cfg_name: str):
         super().__init__(cfg, cfg_name)
 

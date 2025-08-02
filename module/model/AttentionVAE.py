@@ -66,7 +66,6 @@ class AttentionVAE(nn.Module):
         return -0.5 * torch.mean(1 + log_var - mean.pow(2) - log_var.exp())
 
     def encode(self, x):
-        """编码器前向传播"""
         # 自注意力机制
         attn_out, _ = self.encoder_attention(x, x, x)
         attn_out = self.norm(x + attn_out)  # 残差连接
@@ -82,7 +81,6 @@ class AttentionVAE(nn.Module):
         return self.encoder_mean(features), self.encoder_log_var(features)
 
     def decode(self, z, seq_length):
-        """解码器前向传播"""
         # 扩展潜在向量为序列
         decoder_input = z.unsqueeze(1).repeat(1, seq_length, 1)
 
@@ -93,7 +91,6 @@ class AttentionVAE(nn.Module):
         return self.decoder_proj(lstm_out)
 
     def forward(self, x):
-        """完整前向传播"""
         batch_size, seq_len, _ = x.shape
 
         # 编码过程
@@ -106,4 +103,4 @@ class AttentionVAE(nn.Module):
         # 计算正则化损失
         kl_loss = self.compute_kl_divergence(mean, log_var)
 
-        return self.norm(recon), kl_loss
+        return self.norm(recon)

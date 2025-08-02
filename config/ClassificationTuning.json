@@ -1,6 +1,6 @@
 {
     "task_type": "pretrain",
-    "data_path": "@/data/the_verdict/the-verdict.txt",
+    "data_path": "@/data/sms_spam_collection/SMSSpamCollection.csv",
     "data_type": "text",
     "optimize_method": "",
     "trial_num": 5,
@@ -8,7 +8,7 @@
     "optimize_direction": ["minimize"],
     "metrics_filter": [null],
 
-    "batch_size": 2,
+    "batch_size": 8,
     "epochs": 10,
     "learning_rate": 0.0004,
     "predict_range": 1,

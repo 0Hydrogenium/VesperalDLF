@@ -18,17 +18,17 @@
     "time_scale_method": "",
 
     "batch_size": 64,
-    "epochs": 5,
-    "learning_rate": 0.001,
+    "epochs": 10,
+    "learning_rate": 0.0004,
     "predict_range": 1,
     "timestep": 10,
     "train_ratio": 0.8,
     "weight_decay": 0.001,
 
-    "positive_model_name": "AttentionVAE",
-    "negative_model_name": "AttentionVAE",
+    "positive_model_name": "GPT",
+    "negative_model_name": "GPT",
     "loss_function_name": "WeibullTwinDAELoss",
-    "optimizer_name": "Adam",
+    "optimizer_name": "AdamW",
 
     "cumulative_prob": 0.9999,
     "degradation_factor": 1,
@@ -36,16 +36,12 @@
     "baseline_growth": 0,
 
     "model__gamma": 2,
-    "model__negative_layer_dim1": 64,
-    "model__negative_layer_dim2": 32,
-    "model__negative_layer_dim3": 8,
-    "model__negative_p": 0.1,
-    "model__negative_head": 4,
-    "model__threshold_theta": 1,
-    "model__hidden_dim": 64,
-    "model__num_layers": 3,
-    "model__num_heads": 5,
-    "model__ff_dim": 512,
+    "context_length": 48,
+    "emb_dim": 48,
+    "n_heads": 12,
+    "n_layers": 12,
+    "drop_rate": 0.1,
+    "qkv_bias": false,
 
     "model__input_dim": 200
 }

@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import optuna
 import pandas as pd
+plt.rcParams['font.sans-serif'] = ['SimHei']  # 常用中文字体列表
+plt.rcParams['axes.unicode_minus'] = False  # 解决负号显示异常
 
 from utils.preference_color.PreferenceColor import PreferenceColor
 

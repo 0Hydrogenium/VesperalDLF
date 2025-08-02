@@ -1,6 +1,6 @@
 from extra.llm.module.tokenizer.BPETokenizer import BPETokenizer
-from extra.llm.utils.TextGenerator import TextGenerator
-from extra.llm.utils.ModelLoader import ModelLoader
+from extra.llm.module.generator.TextGenerator import TextGenerator
+from extra.llm.utils.LLMLoader import LLMLoader
 from utils.GeneralTool import GeneralTool
 
 if __name__ == '__main__':
@@ -11,7 +11,7 @@ if __name__ == '__main__':
     cfg = GeneralTool.load_cfg(cfg_name)
 
     model_name = "GPT2-124M"
-    model, cfg = ModelLoader.load(model_name, cfg)
+    model, cfg = LLMLoader.load(model_name, cfg)
     model = model.to(device)
     tokenizer = BPETokenizer()
 

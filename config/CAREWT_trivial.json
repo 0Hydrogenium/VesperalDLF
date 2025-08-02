@@ -1,0 +1,19 @@
+{
+    "task_type": "classification",
+    "data_path": "@/data/care_to_compare_wind_turbine_anomaly",
+    "data_type": "time_series",
+    "target_method": "all_binarize",
+    "optimize_method": "",
+    "trial_num": 5,
+    "optimize_metric": ["accuracy", "recall", "precision", "f1"],
+    "optimize_direction": ["maximize", "maximize", "maximize", "maximize"],
+    "metrics_filter": [null, null, null, null],
+    "null_data_method": "fill_null_with_zero",
+    "normalize_data_method": "z_score",
+    "sample_data_method": "",
+    "time_scale_method": "",
+
+    "farm_name": "Wind Farm A",
+
+    "model_name": "AllAnomaly"
+}

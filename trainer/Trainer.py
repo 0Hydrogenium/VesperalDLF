@@ -28,8 +28,8 @@ from utils.visualizer.Visualizer import Visualizer
 class Trainer:
 
     WARNING_NOT_FOUND_STR = "[config] '{}' is not found"
-    SAVE_PATH = "./result/{}"
-    MODEL_SAVE_PATH = "./model/{}"
+    SAVE_PATH = GeneralTool.root_path + "/result/{}"
+    MODEL_PATH = GeneralTool.root_path + "/model/{}"
 
     def __init__(self, cfg: dict, cfg_name: str, chosen_metric: str = "recall"):
         self.cfg = cfg  # 当前参数配置
@@ -43,11 +43,12 @@ class Trainer:
         self.visualizer = Visualizer()
         self.chosen_metric = chosen_metric
         self.data_info = {}
+        self.pic = "png"  # 图片保存格式
 
     def start(self):
         # 创建模型存储文件夹
-        os.makedirs(self.MODEL_SAVE_PATH.format(self.cfg_name), exist_ok=True)
-        self.model_save_path = self.MODEL_SAVE_PATH.format(self.cfg_name)
+        os.makedirs(self.MODEL_PATH.format(self.cfg_name), exist_ok=True)
+        self.model_save_path = self.MODEL_PATH.format(self.cfg_name)
 
         # 创建配置类实验结果文件夹
         os.makedirs(self.SAVE_PATH.format(self.cfg_name), exist_ok=True)
@@ -100,7 +101,7 @@ class Trainer:
             self.visualizer.bar_plot_param_importance(
                 study,
                 self.cfg["optimize_metric"],
-                save_path=f"{self.result_save_path}/param_importance_plot.svg"
+                save_path=f"{self.result_save_path}/param_importance_plot.{self.pic}"
             )
             # 绘制帕累托前沿二维投影图
             label_list = ["accuracy", "recall", "precision"]
@@ -112,7 +113,7 @@ class Trainer:
                 alpha=0.3,
                 s=10,
                 figsize=(8, 6),
-                save_path=f"{self.result_save_path}/pareto_projection_plot.svg"
+                save_path=f"{self.result_save_path}/pareto_projection_plot.{self.pic}"
             )
 
         # 根据最优参数组合额外进行一次模型训练测试及可视化 | 直接进行模型训练测试及可视化
@@ -174,7 +175,7 @@ class Trainer:
                 scale=0.5,
                 alpha=0.2,
                 figsize=(8, 6),
-                save_path=f"{self.result_save_path}/loss_plot.svg"
+                save_path=f"{self.result_save_path}/loss_plot.{self.pic}"
             )
 
         # 更新超参数优化次数
@@ -196,6 +197,7 @@ class Trainer:
             loss.backward()
             optimizer.step()
 
+            train_metrics_tracker.update(real_array=x_train.reshape(x_train.shape[0], -1), pred_array=x_train_pred.reshape(x_train_pred.shape[0], -1))
             loss_list.append(loss.item())
             train_bar.desc = "train epoch[{}/{}] (init:{:4f}) loss:{:.4f}".format(epoch, self.cfg["epochs"], loss_list[0], loss)
 
@@ -215,6 +217,7 @@ class Trainer:
                 x_test_pred = model(x_test)
                 loss = loss_function(x_test_pred.flatten(0, 1), y_test.flatten())
 
+                test_metrics_tracker.update(real_array=x_test.reshape(x_test.shape[0], -1), pred_array=x_test_pred.reshape(x_test_pred.shape[0], -1))
                 loss_list.append(loss.item())
                 test_bar.desc = "test epoch[{}/{}] (init:{:4f}) loss:{:.4f}".format(epoch, self.cfg["epochs"], loss_list[0], loss)
 
@@ -255,8 +258,8 @@ class Trainer:
                 elif param_value["type"] == "float":
                     self.cfg[param_name] = trial.suggest_float(param_name, param_value["start"], param_value["end"])
 
-    def import_data(self, data_path):
-        df = pd.read_csv(data_path.replace('@', GeneralTool.root_path))
+    def import_data(self, data_path, encoding='utf-8'):
+        df = pd.read_csv(data_path.replace('@', GeneralTool.root_path), encoding=encoding)
         print(f"imported data (length: {df.shape[0]}, features: {df.shape[1]})")
         self.data_info["imported_data_length"] = df.shape[0]
         self.data_info["imported_data_features"] = df.shape[1]
@@ -318,36 +321,35 @@ class Trainer:
 
             return df
 
-        target_name = self.cfg["target_name"]
         # 分类任务的目标值不进行标准化，回归任务的目标值进行标准化
         if self.cfg["normalize_data_method"] == "z_score":
             scaler = StandardScaler()
-            if self.cfg["task_type"] == "classification":
-                _target_df = df[target_name]
-                x_col_list = [col for col in df.columns if col != target_name]
+            if self.cfg["task_type"] == "classification" and "target_name" in self.cfg:
+                _target_df = df[self.cfg["target_name"]]
+                x_col_list = [col for col in df.columns if col != self.cfg["target_name"]]
                 df = pd.DataFrame(
                     scaler.fit_transform(df.loc[:, x_col_list]),
                     columns=x_col_list
                 )
-                df.insert(0, target_name, _target_df)
+                df.insert(0, self.cfg["target_name"], _target_df)
 
-            elif self.cfg["task_type"] == "regression":
+            else:
                 df = pd.DataFrame(
                     scaler.fit_transform(df),
                     columns=df.columns
                 )
         elif self.cfg["normalize_data_method"] == "min_max":
             scaler = MinMaxScaler()
-            if self.cfg["task_type"] == "classification":
-                _target_df = df[target_name]
-                x_col_list = [col for col in df.columns if col != target_name]
+            if self.cfg["task_type"] == "classification" and "target_name" in self.cfg:
+                _target_df = df[self.cfg["target_name"]]
+                x_col_list = [col for col in df.columns if col != self.cfg["target_name"]]
                 df = pd.DataFrame(
                     scaler.fit_transform(df.loc[:, x_col_list]),
                     columns=x_col_list
                 )
-                df.insert(0, target_name, _target_df)
+                df.insert(0, self.cfg["target_name"], _target_df)
 
-            elif self.cfg["task_type"] == "regression":
+            else:
                 df = pd.DataFrame(
                     scaler.fit_transform(df),
                     columns=df.columns

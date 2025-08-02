@@ -40,19 +40,19 @@ class ClassificationMetricsTracker:
     def update_precision(self, real_array: np.ndarray, pred_array: np.ndarray) -> float:
         precision = precision_score(y_true=real_array, y_pred=pred_array, zero_division=np.nan)
         if not np.isnan(precision):
-            self.metrics["precision"].append(precision)
+            self.metrics["precision"].append(precision.item())
         return precision
 
     def update_recall(self, real_array: np.ndarray, pred_array: np.ndarray) -> float:
         recall = recall_score(y_true=real_array, y_pred=pred_array, zero_division=np.nan)
         if not np.isnan(recall):
-            self.metrics["recall"].append(recall)
+            self.metrics["recall"].append(recall.item())
         return recall
 
     def update_f1(self, real_array: np.ndarray, pred_array: np.ndarray) -> float:
         f1 = f1_score(y_true=real_array, y_pred=pred_array, zero_division=np.nan)
         if not np.isnan(f1):
-            self.metrics["f1"].append(f1)
+            self.metrics["f1"].append(f1.item())
         return f1
 
 

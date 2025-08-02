@@ -79,8 +79,8 @@ class ContrastiveBRAETrainer(Trainer):
             data_x = data_x[: len(weibull_data_y), :]
             data_y = data_y[: len(weibull_data_y)]
             if to_visualize:
-                self.visualizer.line_chart_mapping_y_distribution_discrete_with_continuous(data_y, weibull_data_y, self.cfg["target_value"], figsize=(14, 6), alpha=0.3, s=4, save_path=f"{self.result_save_path}/y_distribution_plot_trial_{self.trial_idx}.svg")
-                self.visualizer.line_chart_mapping_y_distribution_param_trend(weibull_baselines, weibull_etas, self.cfg["target_value"], figsize=(8, 6), alpha=0.3, s=4, save_path1=f"{self.result_save_path}/baseline_param_y_distribution_plot_trial_{self.trial_idx}.svg", save_path2=f"{self.result_save_path}/etas_param_y_distribution_plot_trial_{self.trial_idx}.svg")
+                self.visualizer.line_chart_mapping_y_distribution_discrete_with_continuous(data_y, weibull_data_y, self.cfg["target_value"], figsize=(14, 6), alpha=0.3, s=4, save_path=f"{self.result_save_path}/y_distribution_plot_trial_{self.trial_idx}.{self.pic}")
+                self.visualizer.line_chart_mapping_y_distribution_param_trend(weibull_baselines, weibull_etas, self.cfg["target_value"], figsize=(8, 6), alpha=0.3, s=4, save_path1=f"{self.result_save_path}/baseline_param_y_distribution_plot_trial_{self.trial_idx}.{self.pic}", save_path2=f"{self.result_save_path}/etas_param_y_distribution_plot_trial_{self.trial_idx}.{self.pic}")
 
             # 分割训练集和测试集
             train_data_x, train_data_y, test_data_x, test_data_y = self.split_into_train_with_test_data(data_x, data_y)
@@ -245,11 +245,11 @@ class ContrastiveBRAETrainer(Trainer):
 
                 if to_visualize:
                     # 绘制ROC曲线
-                    self.visualizer.roc_curve_on_thresholds(train_fpr, train_tpr, train_roc_auc, figsize=(8, 6), save_path=f"{self.result_save_path}/train_roc_curve_on_thresholds_epoch_{epoch}.svg")
-                    self.visualizer.roc_curve_on_thresholds(test_fpr, test_tpr, test_roc_auc, figsize=(8, 6), save_path=f"{self.result_save_path}/test_roc_curve_on_thresholds_epoch_{epoch}.svg")
+                    self.visualizer.roc_curve_on_thresholds(train_fpr, train_tpr, train_roc_auc, figsize=(8, 6), save_path=f"{self.result_save_path}/train_roc_curve_on_thresholds_epoch_{epoch}.{self.pic}")
+                    self.visualizer.roc_curve_on_thresholds(test_fpr, test_tpr, test_roc_auc, figsize=(8, 6), save_path=f"{self.result_save_path}/test_roc_curve_on_thresholds_epoch_{epoch}.{self.pic}")
                     # 绘制PR曲线
-                    self.visualizer.pr_curve_on_thresholds(train_threshold_recall, train_threshold_precision, train_pr_ap, sum(train_data_y) / len(train_data_y), figsize=(8, 6), save_path=f"{self.result_save_path}/train_pr_curve_on_thresholds_epoch_{epoch}.svg")
-                    self.visualizer.pr_curve_on_thresholds(test_threshold_recall, test_threshold_precision, test_pr_ap, sum(test_data_y) / len(test_data_y), figsize=(8, 6), save_path=f"{self.result_save_path}/test_pr_curve_on_thresholds_epoch_{epoch}.svg")
+                    self.visualizer.pr_curve_on_thresholds(train_threshold_recall, train_threshold_precision, train_pr_ap, sum(train_data_y) / len(train_data_y), figsize=(8, 6), save_path=f"{self.result_save_path}/train_pr_curve_on_thresholds_epoch_{epoch}.{self.pic}")
+                    self.visualizer.pr_curve_on_thresholds(test_threshold_recall, test_threshold_precision, test_pr_ap, sum(test_data_y) / len(test_data_y), figsize=(8, 6), save_path=f"{self.result_save_path}/test_pr_curve_on_thresholds_epoch_{epoch}.{self.pic}")
 
         # 获取epochs内最佳模型+参数+指标
         best_metrics, best_cfg, best_epoch = best_metrics_tracker.get_best(self.cfg["metrics_filter"], self.cfg["optimize_metric"], self.cfg["optimize_direction"])
@@ -296,7 +296,7 @@ class ContrastiveBRAETrainer(Trainer):
                 scale=0.5,
                 alpha=0.2,
                 figsize=(8, 6),
-                save_path=f"{self.result_save_path}/negative_model_loss_plot.svg"
+                save_path=f"{self.result_save_path}/negative_model_loss_plot.{self.pic}"
             )
 
             # 阈值模型
@@ -321,7 +321,7 @@ class ContrastiveBRAETrainer(Trainer):
                 scale=0.5,
                 alpha=0.2,
                 figsize=(8, 6),
-                save_path=f"{self.result_save_path}/threshold_model_loss_plot.svg"
+                save_path=f"{self.result_save_path}/threshold_model_loss_plot.{self.pic}"
             )
 
         return tuple(best_metrics[metric] for metric in self.cfg["optimize_metric"])

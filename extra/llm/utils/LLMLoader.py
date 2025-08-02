@@ -8,7 +8,7 @@ from extra.llm.module.model.GPTModel import GPTModel
 from utils.GeneralTool import GeneralTool
 
 
-class ModelLoader:
+class LLMLoader:
     @classmethod
     def load(cls, model_name, cfg):
         if model_name in ["GPT2-124M", "GPT2-355M"]:

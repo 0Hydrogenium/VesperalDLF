@@ -15,6 +15,7 @@ from module.ModelFactory import ModelFactory
 from module.OptimizerFactory import OptimizerFactory
 from module.dataset.WeibullMappingDataset import WeibullMappingDataset
 from trainer.Trainer import Trainer
+from utils.GeneralTool import GeneralTool
 from utils.metric_tracker.BestMetricsTracker import BestMetricsTracker
 from utils.metric_tracker.ClassificationMetricsTracker import ClassificationMetricsTracker
 from utils.metric_tracker.RegressionMetricsTracker import RegressionMetricsTracker
@@ -37,9 +38,10 @@ class WeibullTwinDAETrainer(Trainer):
 
             train_data_list = []
             test_data_list = []
-            for data_path in os.listdir(self.cfg["data_path"]):
+            base_path = self.cfg["data_path"].replace("@", GeneralTool.root_path)
+            for data_path in os.listdir(base_path):
                 # 导入数据表
-                current_data_path = f"{self.cfg['data_path']}/{data_path}"
+                current_data_path = f"{base_path}/{data_path}"
                 df = self.import_data(current_data_path)
 
                 # 由于后续使用多头注意力机制，需要将特征数量凑成偶数
@@ -118,7 +120,7 @@ class WeibullTwinDAETrainer(Trainer):
                     figsize=(14, 6),
                     alpha=0.3,
                     s=4,
-                    save_path=f"{self.result_save_path}/y_distribution_plot_trial_{self.trial_idx}.svg"
+                    save_path=f"{self.result_save_path}/y_distribution_plot_trial_{self.trial_idx}.{self.pic}"
                 )
                 self.visualizer.line_chart_mapping_y_distribution_param_trend(
                     total_dataset,
@@ -126,8 +128,8 @@ class WeibullTwinDAETrainer(Trainer):
                     figsize=(8, 6),
                     alpha=0.3,
                     s=4,
-                    save_path1=f"{self.result_save_path}/baseline_param_y_distribution_plot_trial_{self.trial_idx}.svg",
-                    save_path2=f"{self.result_save_path}/etas_param_y_distribution_plot_trial_{self.trial_idx}.svg"
+                    save_path1=f"{self.result_save_path}/baseline_param_y_distribution_plot_trial_{self.trial_idx}.{self.pic}",
+                    save_path2=f"{self.result_save_path}/etas_param_y_distribution_plot_trial_{self.trial_idx}.{self.pic}"
                 )
 
             # 分割训练集和测试集
@@ -213,7 +215,7 @@ class WeibullTwinDAETrainer(Trainer):
                     p_alpha=0.2,
                     s=10,
                     figsize=(8, 6),
-                    save_path=f"{self.result_save_path}/train_deviation_scatter_plot_epoch_{epoch}.svg"
+                    save_path=f"{self.result_save_path}/train_deviation_scatter_plot_epoch_{epoch}.{self.pic}"
                 )
                 self.visualizer.deviation_scatter_plot(
                     test_deviation_label_array,
@@ -222,7 +224,7 @@ class WeibullTwinDAETrainer(Trainer):
                     p_alpha=0.2,
                     s=10,
                     figsize=(8, 6),
-                    save_path=f"{self.result_save_path}/test_deviation_scatter_plot_epoch_{epoch}.svg"
+                    save_path=f"{self.result_save_path}/test_deviation_scatter_plot_epoch_{epoch}.{self.pic}"
                 )
 
             """
@@ -257,14 +259,14 @@ class WeibullTwinDAETrainer(Trainer):
                     train_tpr,
                     train_roc_auc,
                     figsize=(8, 6),
-                    save_path=f"{self.result_save_path}/train_roc_curve_on_thresholds_epoch_{epoch}.svg"
+                    save_path=f"{self.result_save_path}/train_roc_curve_on_thresholds_epoch_{epoch}.{self.pic}"
                 )
                 self.visualizer.roc_curve_on_thresholds(
                     test_fpr,
                     test_tpr,
                     test_roc_auc,
                     figsize=(8, 6),
-                    save_path=f"{self.result_save_path}/test_roc_curve_on_thresholds_epoch_{epoch}.svg"
+                    save_path=f"{self.result_save_path}/test_roc_curve_on_thresholds_epoch_{epoch}.{self.pic}"
                 )
                 # 绘制PR曲线
                 self.visualizer.pr_curve_on_thresholds(
@@ -273,7 +275,7 @@ class WeibullTwinDAETrainer(Trainer):
                     train_pr_ap,
                     sum(train_dataset.y_list) / len(train_dataset.y_list),
                     figsize=(8, 6),
-                    save_path=f"{self.result_save_path}/train_pr_curve_on_thresholds_epoch_{epoch}.svg"
+                    save_path=f"{self.result_save_path}/train_pr_curve_on_thresholds_epoch_{epoch}.{self.pic}"
                 )
                 self.visualizer.pr_curve_on_thresholds(
                     test_threshold_recall,
@@ -281,7 +283,7 @@ class WeibullTwinDAETrainer(Trainer):
                     test_pr_ap,
                     sum(test_dataset.y_list) / len(test_dataset.y_list),
                     figsize=(8, 6),
-                    save_path=f"{self.result_save_path}/test_pr_curve_on_thresholds_epoch_{epoch}.svg"
+                    save_path=f"{self.result_save_path}/test_pr_curve_on_thresholds_epoch_{epoch}.{self.pic}"
                 )
 
         # 获取epochs内最佳模型+参数+指标
@@ -299,7 +301,7 @@ class WeibullTwinDAETrainer(Trainer):
                 scale=0.5,
                 alpha=0.2,
                 figsize=(8, 6),
-                save_path=f"{self.result_save_path}/negative_model_loss_plot.svg"
+                save_path=f"{self.result_save_path}/negative_model_loss_plot.{self.pic}"
             )
 
             # 正重构模型
@@ -308,7 +310,7 @@ class WeibullTwinDAETrainer(Trainer):
                 scale=0.5,
                 alpha=0.2,
                 figsize=(8, 6),
-                save_path=f"{self.result_save_path}/positive_model_loss_plot.svg"
+                save_path=f"{self.result_save_path}/positive_model_loss_plot.{self.pic}"
             )
 
         # 更新超参数优化次数
@@ -367,8 +369,10 @@ class WeibullTwinDAETrainer(Trainer):
             for idx, data_tensors in enumerate(bar):
                 x_data, y_data, mapped_y_data = data_tensors
                 x_data = x_data.to(self.device)
-                p_x_data_pred, _ = p_model(x_data)
-                n_x_data_pred, _ = n_model(x_data)
+                # p_x_data_pred, _ = p_model(x_data)
+                p_x_data_pred = p_model(x_data)
+                # n_x_data_pred, _ = n_model(x_data)
+                n_x_data_pred = n_model(x_data)
 
                 deviation = ((n_x_data_pred - x_data) ** 2 - (p_x_data_pred - x_data) ** 2).mean(dim=2).mean(dim=1)
 
@@ -398,7 +402,8 @@ class WeibullTwinDAETrainer(Trainer):
             x_train, y_train, mapped_y_train = train_tensors
             x_train, mapped_y_train = x_train.to(self.device), mapped_y_train.to(self.device)
             optimizer.zero_grad()
-            x_train_pred, kl = model(x_train)
+            # x_train_pred, kl = model(x_train)
+            x_train_pred = model(x_train)
             loss = loss_function(x_train_pred, x_train, mapped_y_train, twin_type)
             loss.backward()
             optimizer.step()
@@ -422,7 +427,8 @@ class WeibullTwinDAETrainer(Trainer):
             for idx, test_tensors in enumerate(test_bar):
                 x_test, y_test, mapped_y_test = test_tensors
                 x_test, mapped_y_test = x_test.to(self.device), mapped_y_test.to(self.device)
-                x_test_pred, kl = model(x_test)
+                # x_test_pred, kl = model(x_test)
+                x_test_pred = model(x_test)
                 loss = loss_function(x_test_pred, x_test, mapped_y_test, twin_type)
 
                 x_test = x_test.detach().cpu().numpy()

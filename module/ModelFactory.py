@@ -1,5 +1,6 @@
 import os
 import importlib
+import torch
 
 from utils.GeneralTool import GeneralTool
 
@@ -30,6 +31,9 @@ class ModelFactory:
     model_mapping = init_model_factory()
 
     @classmethod
-    def get(cls, cfg, model_name):
+    def get(cls, cfg, model_name, model_save_path=None):
         model = cls.model_mapping.get(model_name, None)
+        if model is not None and model_save_path is not None:
+            # 加载本地模型权重
+            model.load_state_dict(torch.load(model_save_path))
         return model(cfg)
