@@ -9,7 +9,6 @@ scikit_learn==1.4.2
 torch_geometric==2.6.1
 tqdm==4.67.1
 tiktoken==0.9.0
---index-url https://download.pytorch.org/whl/cu126
-torch==2.7.1+cu126
-torchvision==0.22.1+cu126
-torchaudio==2.7.1+cu126
+https://download.pytorch.org/whl/cu126/torch-2.7.1%2Bcu126-cp311-cp311-win_amd64.whl
+https://download.pytorch.org/whl/cu126/torchvision-0.22.1%2Bcu126-cp311-cp311-win_amd64.whl
+https://download.pytorch.org/whl/cu126/torchaudio-2.7.1%2Bcu126-cp311-cp311-win_amd64.whl
